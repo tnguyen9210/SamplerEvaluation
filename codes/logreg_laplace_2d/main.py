@@ -33,6 +33,7 @@ def run_program(config=None):
     # generate data_x
     data_x = generate_data_x(args)
     # print(data_x.shape)
+    # stop
     
     # generate prior and posterior samples
     samples_a_weights_prior, samples_b_weights_prior, samples_a_weights_posterior = \
@@ -41,19 +42,24 @@ def run_program(config=None):
     # print(samples_a_weights_prior[:5])
     # print(samples_b_weights_prior[:5])
     # print(samples_a_weights_posterior[:5])
+    # stop
 
     # Visualize the generated prior and posterior samples
     fig, axes = plt.subplots(
-        nrows=1, ncols=1, sharex=True, sharey=True, figsize=(10,10))
+        nrows=3, ncols=1, sharex=True, sharey=True, figsize=(10,10))
     # axes = axes.flatten()
 
-    sns.kdeplot(samples_a_weights_prior[:,0], shade=False, color="blue",
-                label="sample_a_prior", ax=axes)
-    sns.kdeplot(samples_b_weights_prior[:,0], shade=False, color="green",
-                label="sample_b_prior", ax=axes)
-    sns.kdeplot(samples_a_weights_posterior[:,0], shade=False, color="orange",
-                label="sample_a_posterior", ax=axes)
-    plt.legend()
+    sns.kdeplot(x=samples_a_weights_prior[:,0], y=samples_a_weights_prior[:,1],
+                n_levels=20, cmap="inferno", shade=False, cbar=True, ax=axes[0])
+
+    sns.kdeplot(x=samples_b_weights_prior[:,0], y=samples_b_weights_prior[:,1],
+                n_levels=20, cmap="inferno", shade=False, cbar=True, ax=axes[1])
+
+    sns.kdeplot(x=samples_a_weights_posterior[:,0], y=samples_a_weights_posterior[:,1],
+                n_levels=20, cmap="inferno", shade=False, cbar=True, ax=axes[2])
+    axes[0].set_title("sample_a_prior")
+    axes[1].set_title("sample_b_prior")
+    axes[2].set_title("sample_a_posterior")
     plt.show()
 
 def generate_data_x(args):
@@ -62,10 +68,10 @@ def generate_data_x(args):
 
     data_x_marginal_dists = [
         stats.multivariate_normal(mu, sigma, seed=12345) \
-        for mu, sigma in args["data_x_marginal_params"]]
+        for mu, sigma in args["data_x_marginal_params"]]  # fixed random seed
 
-    c0_x = data_x_marginal_dists[0].rvs(size=(num_data))[:,None]
-    c1_x = data_x_marginal_dists[1].rvs(size=(num_data))[:,None]
+    c0_x = data_x_marginal_dists[0].rvs(size=(num_data))
+    c1_x = data_x_marginal_dists[1].rvs(size=(num_data))
     data_x = np.vstack((c0_x, c1_x))
 
     return data_x
@@ -95,13 +101,14 @@ def generate_prior_and_posterior_samples(data_x, args):
     samples_a_weights_posterior = []
     for i in range(num_samples):
         # sample two set of weights' priors 
-        sample_a_weights_prior = weights_prior_dist_a.rvs(1)
-        sample_b_weights_prior = weights_prior_dist_b.rvs(1)
+        sample_a_weights_prior = weights_prior_dist_a.rvs(1)[None,:]
+        sample_b_weights_prior = weights_prior_dist_b.rvs(1)[None,:]
         samples_a_weights_prior.append(sample_a_weights_prior)
         samples_b_weights_prior.append(sample_b_weights_prior)
     
         # generate sample y_i from theta_i in A
-        sample_a_logit = 1.0 / (1 + np.exp(-np.dot(data_x, sample_a_weights_prior)))
+        sample_a_logit = 1.0 / (1 + np.exp(
+            -np.matmul(data_x, sample_a_weights_prior.T)))
         sample_a_y = stats.bernoulli.rvs(sample_a_logit)
         # print(sample_a_y.shape)
     
@@ -109,7 +116,7 @@ def generate_prior_and_posterior_samples(data_x, args):
         w_map, h_map = bayes_logistic.fit_bayes_logistic(
             y = sample_a_y.squeeze(-1),
             X = data_x, 
-            wprior = sample_a_weights_prior,  # note: init prior for laplace approximation is same assample prior
+            wprior = sample_a_weights_prior.squeeze(0),  # note: init prior for laplace approximation is same assample prior
             # wprior = np.zeros(num_feats),
             H = ((np.identity(num_feats)) * laplace_init_sigma),
             weights = None,
