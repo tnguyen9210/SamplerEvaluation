@@ -1,2 +1,2 @@
-# TSLogistic
-Thompson Sampling for Logistic Bandits
+# SamplerEvaluation
+An evaluation method for comparing different sampling-based or approximation-based posterior samplers
