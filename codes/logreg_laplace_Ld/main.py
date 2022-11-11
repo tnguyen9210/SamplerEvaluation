@@ -51,9 +51,9 @@ def run_program(config=None):
     axes = axes.flatten()
 
     for i in range(nrows):
-        sns.kdeplot(samples_a_weights_prior[:,0], shade=False, color="blue", label="sample_a_prior", ax=axes[i])
-        sns.kdeplot(samples_b_weights_prior[:,0], shade=False, color="green", label="sample_b_prior", ax=axes[i])
-        sns.kdeplot(samples_a_weights_posterior[:,0], shade=False, color="orange", label="sample_a_posterior", ax=axes[i])
+        sns.kdeplot(samples_a_weights_prior[:,0], fill=False, color="blue", label="sample_a_prior", ax=axes[i])
+        sns.kdeplot(samples_b_weights_prior[:,0], fill=False, color="green", label="sample_b_prior", ax=axes[i])
+        sns.kdeplot(samples_a_weights_posterior[:,0], fill=False, color="orange", label="sample_a_posterior", ax=axes[i])
         axes[i].legend()
     plt.show()
 
@@ -63,13 +63,13 @@ def run_program(config=None):
     # axes = axes.flatten()
 
     sns.kdeplot(x=samples_a_weights_prior[:,0], y=samples_a_weights_prior[:,1],
-                n_levels=20, cmap="inferno", shade=False, cbar=True, ax=axes[0])
+                n_levels=20, cmap="inferno", fill=False, cbar=True, ax=axes[0])
 
     sns.kdeplot(x=samples_b_weights_prior[:,0], y=samples_b_weights_prior[:,1],
-                n_levels=20, cmap="inferno", shade=False, cbar=True, ax=axes[1])
+                n_levels=20, cmap="inferno", fill=False, cbar=True, ax=axes[1])
 
     sns.kdeplot(x=samples_a_weights_posterior[:,0], y=samples_a_weights_posterior[:,1],
-                n_levels=20, cmap="inferno", shade=False, cbar=True, ax=axes[2])
+                n_levels=20, cmap="inferno", fill=False, cbar=True, ax=axes[2])
     axes[0].set_title("sample_a_prior")
     axes[1].set_title("sample_b_prior")
     axes[2].set_title("sample_a_posterior")
