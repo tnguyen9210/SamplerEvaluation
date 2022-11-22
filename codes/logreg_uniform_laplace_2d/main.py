@@ -1,26 +1,16 @@
 
 
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-
-color_list = ["Green", "Blue"]
-color_map = mcolors.ListedColormap(["Green", "Blue"])
-
-import seaborn as sns
-sns.set()
-sns.set_palette("tab10")
-
 import random as rnd
 import numpy as np
-rnd.seed(0)
-np.random.seed(0)
+# rnd.seed(0)
+# np.random.seed(0)
 
 import scipy.stats as stats
 import bayes_logistic
 
 # 
 from config import parse_args
-from utils import print_config
+from utils import print_config, plot_prior_posterior_samples
 
 def run_program(config=None):
 
@@ -38,43 +28,17 @@ def run_program(config=None):
     # generate prior and posterior samples
     samples_a_weights_prior, samples_b_weights_prior, samples_a_weights_posterior = \
         generate_prior_and_posterior_samples(data_x, args)
-    # print(samples_a_weights_prior.shape)
-    # print(samples_a_weights_prior[:5])
-    # print(samples_b_weights_prior[:5])
-    # print(samples_a_weights_posterior[:5])
-    # stop
 
-    # Visualize the generated prior and posterior samples 
-    nrows = 2
-    fig, axes = plt.subplots(nrows=nrows, ncols=1, sharex=True, sharey=True, figsize=(10,10))
-    axes = axes.flatten()
-
-    for i in range(nrows):
-        sns.kdeplot(samples_a_weights_prior[:,0], fill=False, color="blue", label="sample_a_prior", ax=axes[i])
-        sns.kdeplot(samples_b_weights_prior[:,0], fill=False, color="green", label="sample_b_prior", ax=axes[i])
-        sns.kdeplot(samples_a_weights_posterior[:,0], fill=False, color="orange", label="sample_a_posterior", ax=axes[i])
-        axes[i].legend()
-    plt.savefig(f"./figures/{args['test_name']}_indi")
-    plt.show()
-
-    # Visualize the generated prior and posterior samples
-    fig, axes = plt.subplots(
-        nrows=3, ncols=1, sharex=True, sharey=True, figsize=(10,10))
-    # axes = axes.flatten()
-
-    sns.kdeplot(x=samples_a_weights_prior[:,0], y=samples_a_weights_prior[:,1],
-                n_levels=20, cmap="inferno", fill=False, cbar=True, ax=axes[0])
-
-    sns.kdeplot(x=samples_b_weights_prior[:,0], y=samples_b_weights_prior[:,1],
-                n_levels=20, cmap="inferno", fill=False, cbar=True, ax=axes[1])
-
-    sns.kdeplot(x=samples_a_weights_posterior[:,0], y=samples_a_weights_posterior[:,1],
-                n_levels=20, cmap="inferno", fill=False, cbar=True, ax=axes[2])
-    axes[0].set_title("sample_a_prior")
-    axes[1].set_title("sample_b_prior")
-    axes[2].set_title("sample_a_posterior")
-    plt.savefig(f"./figures/{args['test_name']}_pair")
-    plt.show()
+    # measure distance
+    
+    
+    # visualize the generated prior and posterior samples
+    plot_prior_posterior_samples(
+        samples_a_weights_prior,
+        samples_b_weights_prior,
+        samples_a_weights_posterior,
+        num_feats=2, args=args)
+   
 
 def generate_data_x(args):
     # Generate data_x
@@ -83,14 +47,19 @@ def generate_data_x(args):
     data_x_type = args["data_x_type"]
 
     if data_x_type == "twopoints":
-        data_x = np.array([0, 1]*num_data//2)
+        if num_data != 2:
+            raise ValueError("num_data should equal 2")
+        data_x = np.array([[0, 1], [1, 0]])
+        
     elif data_x_type == "uniform":
-        data_x = np.random.randn(num_data, num_feats)
+        data_x = stats.uniform.rvs(
+            0, 1, size=(num_data, num_feats), random_state=12345)
+        
     elif data_x_type == "multigauss":
-        data_x = np.random.rand(num_data, num_feats)
         mu = args["data_x_marginal_params"][0][0]
         sigma = args["data_x_marginal_params"][0][1]
         data_x = stats.multivariate_normal.rvs(mu, sigma, seed=12345)
+        
     elif data_x_type == "mixgauss":
         data_x_marginal_dists = [
             stats.multivariate_normal(mu, sigma, seed=12345) \
@@ -102,18 +71,17 @@ def generate_data_x(args):
     else:
         stop
         
+    print(data_x)
     print(data_x.shape)
 
     return data_x
 
+
 def generate_prior_and_posterior_samples(data_x, args):
     
-    # np.random.seed(0)
-
     # params
     num_feats = args["num_feats"]
     num_samples = args["num_samples"]
-    laplace_init_sigma = args["laplace_init_sigma"]
     laplace_num_iters = args["laplace_num_iters"]
     
     # weights' prior distribution
@@ -143,12 +111,15 @@ def generate_prior_and_posterior_samples(data_x, args):
         # print(sample_a_y.shape)
     
         # fit laplace approximation
+        # note:
+        # init params (mu and Hessian) for laplace approximation of posterior
+        # are set to be the same as params of prior 
         w_map, h_map = bayes_logistic.fit_bayes_logistic(
             y = sample_a_y.squeeze(-1),
             X = data_x, 
-            # wprior = sample_a_weights_prior.squeeze(0),  # note: init prior for laplace approximation is same assample prior
-            wprior = np.array(weights_prior_params[0]),
-            H = ((np.identity(num_feats)) * laplace_init_sigma),
+            wprior = np.array(weights_prior_params[0]), 
+            H = np.linalg.inv(np.array(weights_prior_params[1])),
+            # H = ((np.identity(num_feats)) * laplace_init_sigma),
             weights = None,
             solver = "Newton-CG",
             bounds = None,
@@ -163,8 +134,8 @@ def generate_prior_and_posterior_samples(data_x, args):
     samples_a_weights_prior = np.vstack(samples_a_weights_prior)
     samples_b_weights_prior = np.vstack(samples_b_weights_prior)
     samples_a_weights_posterior = np.vstack(samples_a_weights_posterior)
-    # print(samples_a_weights_prior.shape)
-    # print(samples_b_weights_prior)
+    # print(samples_a_weights_prior[:2])
+    # print(samples_b_weights_prior[:2])
     # print(samples_a_weights_posterior)
     return samples_a_weights_prior, samples_b_weights_prior, \
         samples_a_weights_posterior

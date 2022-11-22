@@ -24,7 +24,6 @@ def parse_args():
     args["weights_prior_params"] = [[0.0, 0.0], [[1.0, 0.0], [0.0, 1.0]]]
 
     # init sigma used in numerical optimization for laplace approximation
-    args["laplace_init_sigma"] = 0.01
     args["laplace_num_iters"] = 1000
 
     return args
