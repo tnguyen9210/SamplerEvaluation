@@ -64,3 +64,4 @@ def compute_diff_std(p, q, true_mu):
 
     return np.abs(p_std_from_mean - q_std_from_mean)
 
+
