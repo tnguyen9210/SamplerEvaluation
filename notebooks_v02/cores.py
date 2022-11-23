@@ -37,8 +37,8 @@ def generate_prior_and_posterior_samples(data_x, sampling_method, args):
     samples_b_weights_prior = []
     samples_a_weights_posterior = []
     for sidx in range(num_samples):
-        if sidx % 100 == 0:
-            print(f"working on sample: {sidx}")
+        # if sidx % 100 == 0:
+        #     print(f"working on sample: {sidx}")
         # sample two set of weights' priors 
         sample_a_weights_prior = weights_prior_dist_a.rvs(1)[None,:]
         sample_b_weights_prior = weights_prior_dist_b.rvs(1)[None,:]
@@ -78,7 +78,7 @@ def sample_laplace_approx(X, y, args):
     
     w_map, h_map = bayes_logistic.fit_bayes_logistic(
         y = y.squeeze(-1),
-        X = x, 
+        X = X, 
         wprior = np.array(weights_prior_params[0]), 
         H = np.linalg.inv(np.array(weights_prior_params[1])),
         weights = None,
