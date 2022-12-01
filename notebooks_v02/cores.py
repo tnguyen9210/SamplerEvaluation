@@ -18,6 +18,7 @@ from pyro.nn import PyroModule, PyroSample
 
 
 def generate_prior_and_posterior_samples(data_x, sampling_method, args):
+    np.random.seed(0)
     
     # params
     num_feats = args["num_feats"]
